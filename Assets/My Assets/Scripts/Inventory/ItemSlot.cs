@@ -120,20 +120,20 @@ public class ItemSlot : Selectable, ISubmitHandler {
 	#endregion
 
 	#region ADD/REMOVE AMOUNT
-	/// <summary>Merges the given amount to this itemSlot and leaves it and returns the left over amount.</summary>
+	/// <summary>Merges the given amount to this itemSlot and leaves it and returns the left over amount. Returns -1 if it fails.</summary>
 	/// <param name="inItem">The item merging</param>
 	public int MergeAmount(Item inItem) {
 		if(isDisabled) {
 			Debug.LogWarning("Cant merge items, this itemSlot is disabled");
-			return 0;
+			return -1;
 		}
 		if(IsEmpty) {
 			Debug.LogWarning("Cant merge items, this itemSlot is empty");
-			return 0;
+			return -1;
 		}
 		if(item.GetType() != inItem.GetType()) {
 			Debug.LogWarning("Cant merge items, the incoming item is not the same type as this itemSlot");
-			return 0;
+			return -1;
 		}
 		
 		//Can we fit all of the incoming amount into our item
