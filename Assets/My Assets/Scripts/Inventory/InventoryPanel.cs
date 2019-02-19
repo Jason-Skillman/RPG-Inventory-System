@@ -10,7 +10,7 @@ public class InventoryPanel : MonoBehaviour {
 	
 	private ItemSlot[] itemSlots;                                                //All of the enabled itemslots in this panel
 
-	/// <summary>The amount of items in the panel</summary>
+	/// <summary>The amount of itemSlots that are not empty in the panel</summary>
 	public int ItemCount { get; private set; }
 	/// <summary>The max size of how many items can be held in the panel</summary>
 	public int Capasity {
@@ -19,32 +19,32 @@ public class InventoryPanel : MonoBehaviour {
 			else return 0;
 		}
 	}
-	/// <summary>The max size of how many items could be held incuding disabled slots in the panel</summary>
+	/// <summary>The max size of how many items could be held incuding disabled slots</summary>
 	public int TotalCapasity { get; private set; }
 
 	/// <summary>Is all of the slots in the panel full</summary>
 	public bool IsSlotsFull { get { return (ItemCount >= Capasity); } }
 	/// <summary>Is all of the slots max item count full. Is every stack maxed out?</summary>
-	public bool IsItemsFull {
+	public bool IsSlotsCountFull {
 		get {
-			if(IsSlotsFull) {
-				if(itemSlots != null) {
-					for(int i = 0; i < itemSlots.Length; i++) {
-						if(itemSlots[i].IsEmpty || itemSlots[i].item.amount < itemSlots[i].item.maxStack) {
-							return false;
-						}
-					}
-				}
-				return true;
-			} else {
+			if(!IsSlotsFull) {
 				return false;
 			}
+
+			if(itemSlots != null) {
+				for(int i = 0; i < itemSlots.Length; i++) {
+					if(itemSlots[i].IsEmpty || itemSlots[i].item.amount < itemSlots[i].item.maxStack) {
+						return false;
+					}
+				}
+			}
+			return true;
 		}
 	}
 
 	//Delegates
-	//public delegate void Callback(InventoryPanel panel, ItemSlot itemSlot, int index);
-	//public static Callback OnSlotPanelSelectedCallback, OnSlotPanelSubmitCallback;
+	public delegate void Callback(InventoryPanel panel, ItemSlot itemSlot, int index);
+	public static Callback OnSlotPanelSelectedCallback, OnSlotPanelSubmitCallback;
 
 
 	void Awake() {
@@ -59,32 +59,34 @@ public class InventoryPanel : MonoBehaviour {
 		//	CalculateItemSlots();
 		//}
 	}
-
-	/*
+	
 	/// <summary>Checks if the item can be added to the panel without accualy adding it</summary>
 	public bool CanHoldItem(Item item) {
-		if(!IsItemsFull) {
-			for(int i = 0; i < itemSlots.Length; i++) {
-				if(IsSlotsFull) {
-					if(!itemSlots[i].IsEmpty && itemSlots[i].item.name == item.name) {
-						if(itemSlots[i].item.amount < itemSlots[i].item.maxStack) {
-							return true;
-						}
+		if(IsSlotsCountFull) {
+			return false;
+		}
+		
+		for(int i = 0; i < itemSlots.Length; i++) {
+			if(IsSlotsFull) {
+				if(!itemSlots[i].IsEmpty && itemSlots[i].item.name == item.name) {
+					if(itemSlots[i].item.amount < itemSlots[i].item.maxStack) {
+						return true;
 					}
-				} else {
-					return true;
 				}
+			} else {
+				return true;
 			}
 		}
 		return false;
 	}
-	*/
 
-	[ContextMenu("CalculateSlotAmount")]
+	[ContextMenu("CalculateItemSlots")]
 	/// <summary>Recalculates how many slots are available for this slot to use</summary>
 	public void CalculateItemSlots() {
 		ItemSlot[] itemSlotArr = GetComponentsInChildren<ItemSlot>();
 		TotalCapasity = itemSlotArr.Length;
+
+		//Extract only the itemSlots that are not disabled
 		List<ItemSlot> itemSlotList = new List<ItemSlot>();
 		for(int i = 0; i < itemSlotArr.Length; i++) {
 			if(!itemSlotArr[i].isDisabled) {
@@ -92,15 +94,23 @@ public class InventoryPanel : MonoBehaviour {
 			}
 		}
 		itemSlots = itemSlotList.ToArray();
+
+		//Check if their are any items in the items slots
+		ItemCount = 0;	//Reset the count
+		foreach(ItemSlot itemSlot in itemSlots) {
+			if(!itemSlot.IsEmpty) {
+				ItemCount++;
+			}
+		}
 	}
 	
-	/*
+	
 	#region ADD/REMOVE ITEM
 	/// <summary>Adds the item to the item panel</summary>
 	/// <param name="item">The item to add</param>
 	public bool AddItem(Item item) {
 		//Check if the incoming item matches this panels type
-		if(item.GetType().ToString().Equals(itemType.ToString()) || itemType == PanelType.All) {
+		//if(item.GetType().ToString().Equals(itemType.ToString()) || itemType == PanelType.All) {
 
 			do {
 				//Check if there is already an existing stack
@@ -116,7 +126,7 @@ public class InventoryPanel : MonoBehaviour {
 								itemSlots[i].AddAmount(amountLeftInSlot);
 								item.amount -= amountLeftInSlot;
 
-								if(IsItemsFull) {
+								if(IsSlotsCountFull) {
 									Debug.LogWarning("Item filled up the last slot");
 									return false;
 								}
@@ -173,10 +183,10 @@ public class InventoryPanel : MonoBehaviour {
 
 			} while(item.amount > 0);
 			return true;
-		} else {
-			Debug.LogWarning("Cant add item because the item is not the right type");
-			return false;
-		}
+		//} else {
+		//	Debug.LogWarning("Cant add item because the item is not the right type");
+		//	return false;
+		//}
 	}
 
 	/// <summary>Removes the item at the index</summary>
@@ -239,9 +249,7 @@ public class InventoryPanel : MonoBehaviour {
 		return items;
 	}
 	#endregion
-	*/
-
-	/*
+	
 	#region METHOD MESSAGES
 	/// <summary>Method Message: Called when any itemSlot is selected</summary>
 	private void OnSlotSelected(ItemSlot itemSlot) {
@@ -268,9 +276,7 @@ public class InventoryPanel : MonoBehaviour {
 		}
 	}
 	#endregion
-	*/
-
-	/*
+	
 	#region SETTERS & GETTERS
 	/// <summary>Selects the itemSlot with the given index in this panel</summary>
 	public void SelectSlot(int index) {
@@ -307,7 +313,6 @@ public class InventoryPanel : MonoBehaviour {
 		}
 	}
 	#endregion
-	*/
 
 }
 

@@ -22,7 +22,7 @@ public class InventoryPanelEditor : Editor {
 		//Readonly
 		EditorGUILayout.LabelField("Inventory: " + main.ItemCount + "/" + main.Capasity + " (" + main.TotalCapasity + ")");
 		EditorGUILayout.LabelField("Is Slots Full: " + main.IsSlotsFull);
-		EditorGUILayout.LabelField("Is Items Full: " + main.IsItemsFull);
+		EditorGUILayout.LabelField("Is Items Full: " + main.IsSlotsCountFull);
 		GUILayout.Space(5);
 
 
