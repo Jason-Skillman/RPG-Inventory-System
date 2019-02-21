@@ -31,6 +31,12 @@ public class Tester_ItemSlot : MonoBehaviour {
 		Debug.Log("Item removed: " + itemRemoved.name);
 	}
 
+	[ContextMenu("Tester_RemoveItemAmount")]
+	public void Tester_RemoveItemAmount() {
+		Item itemRemoved = itemSlot.RemoveItem(2);
+		Debug.Log("Item removed: " + itemRemoved.name + ", amount: " + itemRemoved.amount);
+	}
+
 	[ContextMenu("Tester_MergeAmount")]
 	public void Tester_MergeAmount() {
 		Item itemCopy = Instantiate(item);

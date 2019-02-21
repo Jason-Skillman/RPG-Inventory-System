@@ -15,7 +15,7 @@ MonoBehaviour:
   name: Skull
   description: Good thing it's not mine
   maxStack: 13
-  amount: 5
+  amount: 13
   sprite: {fileID: 21300670, guid: dd6898155b857c8428e5ad9ebf9830f4, type: 3}
   ingredientType: 1
   useType: 0

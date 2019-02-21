@@ -37,8 +37,8 @@ public class ItemSlot : Selectable, ISubmitHandler {
 	protected override void Start() {
 		base.Start();
 		if(!Application.isPlaying) return;
-		
-		DisplayUpdateSlot();
+
+		if(!IsEmpty) item = Instantiate(item);
 		
 		if(isDisabled) Disable();
 		else Enable();
@@ -55,13 +55,17 @@ public class ItemSlot : Selectable, ISubmitHandler {
 					slider.gameObject.SetActive(true);
 					slider.maxValue = melee.durabilityMax;
 					slider.value = (float)Math.Ceiling(melee.durability);
-				} 
+				} else {
+					slider.gameObject.SetActive(false);
+				}
 			} else if(item.GetType() == typeof(Range)) {
 				Range range = (Range)item;
 				if(range.durability != range.durabilityMax) {
 					slider.gameObject.SetActive(true);
 					slider.maxValue = range.durabilityMax;
 					slider.value = (float)Math.Ceiling(range.durability);
+				} else {
+					slider.gameObject.SetActive(false);
 				}
 			} else {
 				slider.gameObject.SetActive(false);
@@ -95,10 +99,11 @@ public class ItemSlot : Selectable, ISubmitHandler {
 		}
 
 		item = itemReceived;
-		DisplayUpdateSlot();
 
+		DisplayUpdateSlot();
 		return true;
 	}
+
 	/// <summary>Removes the item in the slot and returns it, returns null if slot is empty.</summary>
 	public Item RemoveItem() {
 		if(isDisabled) {
@@ -106,7 +111,7 @@ public class ItemSlot : Selectable, ISubmitHandler {
 			return null;
 		}
 		if(IsEmpty) {
-			Debug.LogWarning("Cant remove item, the itemSlot is already empty");
+			Debug.LogWarning("Cant remove item, the ItemSlot is already empty");
 			return null;
 		}
 		
@@ -114,7 +119,32 @@ public class ItemSlot : Selectable, ISubmitHandler {
 		item = null;
 
 		DisplayClearSlot();
+		return itemTemp;
+	}
 
+	/// <summary>Removes the item in the slot and returns it, returns null if slot is empty.</summary>
+	/// <param name="amount">The amount to take out</param>
+	public Item RemoveItem(int amount) {
+		if(isDisabled) {
+			Debug.LogWarning("Cant remove item, this itemSlot is disabled");
+			return null;
+		}
+		if(IsEmpty) {
+			Debug.LogWarning("Cant remove item, the ItemSlot is already empty");
+			return null;
+		}
+		if(item.amount - amount < 0) {
+			Debug.LogWarning("Cant remove item, not enough in this slot");
+			return null;
+		}
+
+		Item itemTemp = Instantiate(item);
+		itemTemp.amount = amount;
+
+		item.amount -= amount;
+		if(item.amount <= 0) item = null;
+
+		DisplayUpdateSlot();
 		return itemTemp;
 	}
 	#endregion

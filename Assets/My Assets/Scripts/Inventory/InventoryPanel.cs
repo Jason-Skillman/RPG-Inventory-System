@@ -44,20 +44,18 @@ public class InventoryPanel : MonoBehaviour {
 
 	//Delegates
 	public delegate void Callback(InventoryPanel panel, ItemSlot itemSlot, int index);
-	public static Callback OnSlotPanelSelectedCallback, OnSlotPanelSubmitCallback;
+	public static Callback OnSlotSelectedCallback, OnSlotSubmitCallback;
 
 
 	void Awake() {
-		//ItemSlot.OnSelectedCallback += OnSlotSelected;
-		//ItemSlot.OnSubmitCallback += OnSlotSubmit;
+		ItemSlot.OnSelectedCallback += OnSlotSelected;
+		ItemSlot.OnSubmitCallback += OnSlotSubmit;
 	}
 	void Start() {
 		CalculateItemSlots();
 	}
 	void Update() {
-		//if(!EditorApplication.isPlaying) {	//Editor
-		//	CalculateItemSlots();
-		//}
+		
 	}
 	
 	/// <summary>Checks if the item can be added to the panel without accualy adding it</summary>
@@ -109,133 +107,140 @@ public class InventoryPanel : MonoBehaviour {
 	/// <summary>Adds the item to the item panel</summary>
 	/// <param name="item">The item to add</param>
 	public bool AddItem(Item item) {
-		//Check if the incoming item matches this panels type
-		//if(item.GetType().ToString().Equals(itemType.ToString()) || itemType == PanelType.All) {
+		if(!item) {
+			Debug.LogWarning("Cant add item, the incoming item is null");
+			return false;
+		}
+		if(item.amount <= 0) {
+			Debug.LogWarning("Cant add item, the incoming item is empty");
+			return false;
+		}
+		if(IsSlotsCountFull) {
+			Debug.LogWarning("Cant add item, this InventoryPanel is completly full");
+			return false;
+		}
+		do {
+			//Check if there is already an existing stack somewhere in the inventoryPanel
+			for(int i = 0; i < itemSlots.Length; i++) {
+				//If the slot is not empty and the item in that slot matches the new item
+				if(!itemSlots[i].IsEmpty && itemSlots[i].item.name == item.name) {
+					//Is their is some room in the itemSlot for the new item to go
+					if(itemSlots[i].item.amount < itemSlots[i].item.maxStack) {
+						int amountLeftInSlot = itemSlots[i].item.maxStack - itemSlots[i].item.amount;
 
-			do {
-				//Check if there is already an existing stack
-				for(int i = 0; i < itemSlots.Length; i++) {
-					//If the slot is not empty and the item in that slot matches the new item
-					if(!itemSlots[i].IsEmpty && itemSlots[i].item.name == item.name) {
-						//Is their at least one spot
-						if(itemSlots[i].item.amount < itemSlots[i].item.maxStack) {
-							int amountLeftInSlot = itemSlots[i].item.maxStack - itemSlots[i].item.amount;
+						//Overflow
+						if(item.amount > amountLeftInSlot) {
+							itemSlots[i].AddAmount(amountLeftInSlot);
+							item.amount -= amountLeftInSlot;
 
-							//would over flow
-							if(item.amount > amountLeftInSlot) {
-								itemSlots[i].AddAmount(amountLeftInSlot);
-								item.amount -= amountLeftInSlot;
-
-								if(IsSlotsCountFull) {
-									Debug.LogWarning("Item filled up the last slot");
-									return false;
-								}
-							} else {
-								itemSlots[i].AddAmount(item.amount);
-								item.amount = 0;
+							if(IsSlotsCountFull) {
+								Debug.Log("Item filled up the last slot");
+								return false;
 							}
+						} else {
+							itemSlots[i].AddAmount(item.amount);
+							item.amount = 0;
+						}
 
-							if(IsSlotsFull) {
-								return true;
-							}
-							
+						if(IsSlotsFull) {
+							return true;
 						}
 					}
-
 				}
+			}
 
-				if(!IsSlotsFull) {
-					//Create a new stack
-					if(item.amount > 0) {
-						//Create a new item stack
-						for(int i = 0; i < itemSlots.Length; i++) {
-							//Find the first item slot that is empty
-							if(itemSlots[i].IsEmpty) {
-								
-								Item newItem = Instantiate(item);
-								if(item.amount > item.maxStack) {
-									//temp = new Item(item.item, item.maxStack);
-									newItem.amount = newItem.maxStack;
-									item.amount -= item.maxStack;
-								} else {
-									//temp = new Item(item.item, item.amount);
-									//newItem.amount = 
-									item.amount = 0;
-								}
+			if(IsSlotsFull) {
+				Debug.LogWarning("Cant add item, the InventoryPanel's slots are full");
+				return false;
+			}
 
-								//Add the given item to the slot
-								if(itemSlots[i].AddItem(newItem)) {
-									//Item was succefully added the slot
-									ItemCount++;
-									//return true;
-								} else {
-									Debug.LogWarning("Item was not added");
-									return false;
-								}
-								break;
-							}
-						}
+			//Create a new stack to store the item
+			for(int i = 0; i < itemSlots.Length; i++) {
+				//Find the first item slot that is empty
+				if(itemSlots[i].IsEmpty) {
+
+					//Create the new stack and fill its properties
+					Item newItem = Instantiate(item);
+					if(item.amount > item.maxStack) {
+						newItem.amount = newItem.maxStack;
+						item.amount -= item.maxStack;
+					} else {
+						item.amount = 0;
 					}
-				} else {
-					Debug.LogWarning("This panel is full");
-					return false;
-				}
 
-			} while(item.amount > 0);
-			return true;
-		//} else {
-		//	Debug.LogWarning("Cant add item because the item is not the right type");
-		//	return false;
-		//}
+					//Add the given item to the slot
+					if(itemSlots[i].AddItem(newItem)) {
+						//Item was succefully added the slot
+						ItemCount++;
+					} else return false;
+					
+					break;
+				}
+			}
+		} while(item.amount > 0);
+		return true;
 	}
 
 	/// <summary>Removes the item at the index</summary>
 	/// <param name="item">The index of the item to remove</param>
 	public Item RemoveItem(int index) {
-		//If you have at least one item in your inventory
-		if(ItemCount > 0) {
-			//Remove the item
-			Item item = itemSlots[index].RemoveItem();
-			if(item != null) {
-				//Item was succefully removed from the slot
-				ItemCount--;
-				return item;
-			} else {
-				Debug.LogWarning("Inventory slot is already empty");
-			}
-		} else {
-			Debug.LogWarning("There are no items in this inventory panel to remove");
+		if(ItemCount <= 0) {
+			Debug.LogWarning("Cant remove item, there are no items in this InventoryPanel");
+			return null;
 		}
-		return null;
+		
+		//Extract the item from the ItemSlot
+		Item item = itemSlots[index].RemoveItem();
+		if(!item) {
+			Debug.LogWarning("Cant remove item, the ItemSlot is already empty");
+			return null;
+		}
+
+		//Remove the item from the ItemSlot
+		ItemCount--;
+		return item;
 	}
 
 	/// <summary>Removes the item with the name provided</summary>
 	/// <param name="item">The name of the item to remove</param>
-	public Item RemoveItem(string name) {
-		//If you have ant least one item in your inventory
-		if(ItemCount > 0) {
-			//Loop through all of the ItemSlots
-			for(int i = 0; i < itemSlots.Length; i++) {
-				//See if the ItemSlot is not empty else skip over it
-				if(!itemSlots[i].IsEmpty) {
-					//Are the names the same?
-					Item item = itemSlots[i].item;
-					if(item.name.Equals(name)) {
+	/// /// <param name="amount">The amount to remove</param>
+	public Item RemoveItem(string name, int amount = -1) {
+		if(ItemCount <= 0) {
+			Debug.LogWarning("Cant remove item, there are no items in this InventoryPanel");
+			return null;
+		}
+
+		//Loop through all of the ItemSlots
+		for(int i = 0; i < itemSlots.Length; i++) {
+			//See if the ItemSlot is not empty else skip over it
+			if(!itemSlots[i].IsEmpty) {
+				//Are the names the same?
+				Item item = itemSlots[i].item;
+				if(item.name.Equals(name)) {
+					if(amount < 0) {
 						//Remove the item
 						ItemCount--;
 						return itemSlots[i].RemoveItem();
+					} else {
+						Item itemRemoved = itemSlots[i].RemoveItem(amount);
+						if(itemRemoved) return itemRemoved;
+						else return null;
 					}
 				}
 			}
-			Debug.LogWarning("No item was found in this inventory panel with name: " + name);
-		} else {
-			Debug.LogWarning("There are no items in this inventory panel to remove");
 		}
+
+		Debug.LogWarning("Cant remove item, no item was found in this InventoryPanel with name: " + name);
 		return null;
 	}
-
+	
 	/// <summary>Removes all of the items in the panel</summary>
 	public Item[] RemoveAllItems() {
+		if(ItemCount <= 0) {
+			Debug.LogWarning("Cant remove items, there are no items in this InventoryPanel");
+			return null;
+		}
+
 		Item[] items = new Item[ItemCount];
 		int counter = 0;
 		for(int i = 0; i < itemSlots.Length; i++) {
@@ -254,11 +259,11 @@ public class InventoryPanel : MonoBehaviour {
 	/// <summary>Method Message: Called when any itemSlot is selected</summary>
 	private void OnSlotSelected(ItemSlot itemSlot) {
 		for(int i = 0; i < itemSlots.Length; i++) {
-			//If the selected item slot is in our inventory panel
+			//If the selected item slot is in our InventoryPanel
 			if(itemSlots[i] == itemSlot) {
-				//PUT YOUR CODE HERE
-				OnSlotPanelSelectedCallback(this, itemSlot, i);
-
+				
+				//Called when any ItemSlot in this InventoryPanel is selected
+				OnSlotSelectedCallback(this, itemSlot, i);
 			}
 		}
 	}
@@ -266,31 +271,30 @@ public class InventoryPanel : MonoBehaviour {
 	/// <summary>Method Message: Called when any itemSlot is submited</summary>
 	private void OnSlotSubmit(ItemSlot itemSlot) {
 		for(int i = 0; i < itemSlots.Length; i++) {
-			//If the selected item slot is in our inventory panel
+			//If the selected item slot is in our InventoryPanel
 			if(itemSlots[i] == itemSlot) {
-				//PUT YOUR CODE HERE
 
-				OnSlotPanelSubmitCallback(this, itemSlot, i);
-
+				//Called when any ItemSlot in this InventoryPanel is submited
+				OnSlotSubmitCallback(this, itemSlot, i);
 			}
 		}
 	}
 	#endregion
 	
 	#region SETTERS & GETTERS
-	/// <summary>Selects the itemSlot with the given index in this panel</summary>
-	public void SelectSlot(int index) {
+	/// <summary>Selects the ItemSlot with the given index in this panel</summary>
+	public void SelectSlot(int index = 0) {
 		if(itemSlots[index] != null) {
 			itemSlots[index].Select();
 		}
 	}
-	/// <summary>Deselects the itemSlot with the given index in this panel</summary>
+	/// <summary>Deselects the ItemSlot with the given index in this panel</summary>
 	public void DeselectSlot(int index) {
 		if(itemSlots[index] != null) {
 			itemSlots[index].OnDeselect(null);
 		}
 	}
-	/// <summary>Deselects all of the itemSlots in this panel</summary>
+	/// <summary>Deselects all of the ItemSlots in this panel</summary>
 	public void DeselectAllSlots() {
 		foreach(ItemSlot itemSlot in itemSlots) {
 			itemSlot.OnDeselect(null);
@@ -306,7 +310,7 @@ public class InventoryPanel : MonoBehaviour {
 		gameObject.SetActive(value);
 		CalculateItemSlots();
 	}
-	/// <summary>Updates all of the itemSlot displays in this panel</summary>
+	/// <summary>Updates all of the ItemSlot displays in this panel</summary>
 	public void UpdateAllSlotDisplay() {
 		foreach(ItemSlot itemSlot in itemSlots) {
 			itemSlot.DisplayUpdateSlot();
@@ -315,16 +319,3 @@ public class InventoryPanel : MonoBehaviour {
 	#endregion
 
 }
-
-/*
-public enum PanelType {
-	All,
-	Melee,
-	Range,
-	Armor,
-	Misc,
-	Ingredient,
-	Potion,
-	Special
-}
-*/

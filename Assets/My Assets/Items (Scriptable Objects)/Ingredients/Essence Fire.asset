@@ -15,7 +15,7 @@ MonoBehaviour:
   name: Fire Esence
   description: Essence of fire and hot stuff
   maxStack: 99
-  amount: 1
+  amount: 15
   sprite: {fileID: 21300190, guid: dd6898155b857c8428e5ad9ebf9830f4, type: 3}
   ingredientType: 2
   useType: 0
