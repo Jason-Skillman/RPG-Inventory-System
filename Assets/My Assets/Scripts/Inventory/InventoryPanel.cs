@@ -183,22 +183,18 @@ public class InventoryPanel : MonoBehaviour {
 
 	/// <summary>Removes the item at the index</summary>
 	/// <param name="item">The index of the item to remove</param>
-	public Item RemoveItem(int index) {
+	public Item RemoveItem(int index, int amount = -1) {
 		if(ItemCount <= 0) {
 			Debug.LogWarning("Cant remove item, there are no items in this InventoryPanel");
 			return null;
 		}
-		
-		//Extract the item from the ItemSlot
-		Item item = itemSlots[index].RemoveItem();
-		if(!item) {
-			Debug.LogWarning("Cant remove item, the ItemSlot is already empty");
-			return null;
-		}
 
-		//Remove the item from the ItemSlot
-		ItemCount--;
-		return item;
+		//Extract the item from the ItemSlot
+		Item itemRemoved = itemSlots[index].RemoveItem(amount);
+		if(!itemRemoved) return null;
+
+		if(amount <= 0)  ItemCount--;
+		return itemRemoved;
 	}
 
 	/// <summary>Removes the item with the name provided</summary>
@@ -217,7 +213,7 @@ public class InventoryPanel : MonoBehaviour {
 				//Are the names the same?
 				Item item = itemSlots[i].item;
 				if(item.name.Equals(name)) {
-					if(amount < 0) {
+					if(amount <= 0) {
 						//Remove the item
 						ItemCount--;
 						return itemSlots[i].RemoveItem();
@@ -263,7 +259,8 @@ public class InventoryPanel : MonoBehaviour {
 			if(itemSlots[i] == itemSlot) {
 				
 				//Called when any ItemSlot in this InventoryPanel is selected
-				OnSlotSelectedCallback(this, itemSlot, i);
+				if(OnSlotSelectedCallback != null)
+					OnSlotSelectedCallback(this, itemSlot, i);
 			}
 		}
 	}
@@ -275,7 +272,8 @@ public class InventoryPanel : MonoBehaviour {
 			if(itemSlots[i] == itemSlot) {
 
 				//Called when any ItemSlot in this InventoryPanel is submited
-				OnSlotSubmitCallback(this, itemSlot, i);
+				if(OnSlotSubmitCallback != null)
+					OnSlotSubmitCallback(this, itemSlot, i);
 			}
 		}
 	}
@@ -284,15 +282,13 @@ public class InventoryPanel : MonoBehaviour {
 	#region SETTERS & GETTERS
 	/// <summary>Selects the ItemSlot with the given index in this panel</summary>
 	public void SelectSlot(int index = 0) {
-		if(itemSlots[index] != null) {
+		if(itemSlots[index] != null)
 			itemSlots[index].Select();
-		}
 	}
 	/// <summary>Deselects the ItemSlot with the given index in this panel</summary>
 	public void DeselectSlot(int index) {
-		if(itemSlots[index] != null) {
+		if(itemSlots[index] != null)
 			itemSlots[index].OnDeselect(null);
-		}
 	}
 	/// <summary>Deselects all of the ItemSlots in this panel</summary>
 	public void DeselectAllSlots() {

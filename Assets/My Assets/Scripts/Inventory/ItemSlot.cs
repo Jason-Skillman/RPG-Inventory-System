@@ -39,7 +39,8 @@ public class ItemSlot : Selectable, ISubmitHandler {
 		if(!Application.isPlaying) return;
 
 		if(!IsEmpty) item = Instantiate(item);
-		
+
+		DisplayClearSlot();
 		if(isDisabled) Disable();
 		else Enable();
 	}

@@ -12,6 +12,8 @@ public class Tester_InventoryPanel : MonoBehaviour {
 
 	public void Start() {
 		item = Instantiate(item);
+
+		//InventoryPanel.OnSlotSelectedCallback += OnSlotSelectedCallback_Function;
 	}
 
 	[ContextMenu("Tester_CanHoldItem")]
@@ -28,7 +30,7 @@ public class Tester_InventoryPanel : MonoBehaviour {
 
 	[ContextMenu("Tester_RemoveItemIndex")]
 	public void Tester_RemoveItemIndex() {
-		Item itemTemp = inventoryPanel.RemoveItem(2);
+		Item itemTemp = inventoryPanel.RemoveItem(0, 6);
 		Debug.Log(itemTemp.name);
 	}
 
@@ -44,6 +46,26 @@ public class Tester_InventoryPanel : MonoBehaviour {
 		foreach(Item item in itemArr) {
 			Debug.Log(item.name);
 		}
+	}
+
+	[ContextMenu("Tester_SelectSlot")]
+	public void Tester_SelectSlot() {
+		inventoryPanel.SelectSlot(0);
+	}
+
+	[ContextMenu("Tester_DeselectSlot")]
+	public void Tester_DeselectSlot() {
+		inventoryPanel.DeselectSlot(0);
+	}
+
+	[ContextMenu("Tester_DeselectAllSlots")]
+	public void Tester_DeselectAllSlots() {
+		inventoryPanel.DeselectAllSlots();
+	}
+
+
+	public void OnSlotSelectedCallback_Function(InventoryPanel panel, ItemSlot itemSlot, int index) {
+		Debug.Log("Selected", itemSlot);
 	}
 
 }
