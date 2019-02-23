@@ -24,7 +24,7 @@ public class ItemSlot : Selectable, ISubmitHandler {
 	public bool isDisabled = false;
 	
 	//Delegates
-	public delegate void Callback(ItemSlot itemSlot);
+	public delegate void Callback(BaseEventData eventData, ItemSlot itemSlot);
 	public static Callback OnSelectedCallback, OnDeselectedCallback, OnSubmitCallback;
 
 
@@ -371,7 +371,7 @@ public class ItemSlot : Selectable, ISubmitHandler {
 		isSelected = true;
 		imageSelect.enabled = true;
 
-		if(OnSelectedCallback != null) OnSelectedCallback(this);
+		if(OnSelectedCallback != null) OnSelectedCallback(eventData, this);
 	}
 	
 	/// <summary>Selectable: Called when this UIGameObject is deselected</summary>
@@ -381,14 +381,14 @@ public class ItemSlot : Selectable, ISubmitHandler {
 		isSelected = false;
 		imageSelect.enabled = false;
 
-		if(OnDeselectedCallback != null) OnDeselectedCallback(this);
+		if(OnDeselectedCallback != null) OnDeselectedCallback(eventData, this);
 	}
 	
 	///<summary>ISubmitHandler: Called when you submit this button</summary>
 	public void OnSubmit(BaseEventData eventData) {
 		if(!Application.isPlaying) return;
 
-		if(OnSubmitCallback != null) OnSubmitCallback(this);
+		if(OnSubmitCallback != null) OnSubmitCallback(eventData, this);
 	}
 	#endregion
 	

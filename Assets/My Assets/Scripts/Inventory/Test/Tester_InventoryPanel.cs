@@ -37,7 +37,8 @@ public class Tester_InventoryPanel : MonoBehaviour {
 	[ContextMenu("Tester_RemoveItemString")]
 	public void Tester_RemoveItemString() {
 		Item itemTemp = inventoryPanel.RemoveItem("Skull", 10);
-		Debug.Log(itemTemp.name);
+		if(itemTemp)
+			Debug.Log(itemTemp.name);
 	}
 
 	[ContextMenu("Tester_RemoveAllItems")]

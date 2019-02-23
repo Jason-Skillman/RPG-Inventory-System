@@ -1,26 +1,61 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
-//[ExecuteInEditMode]
+[RequireComponent(typeof(ExcludeList))]
 public class InventoryPanel : MonoBehaviour {
 
-	//public PanelType itemType;													//The type of items that can be put into this panel
 	//public ItemDisplayer displayer;												//Reference to this panel's item displayer
+
 	
-	private ItemSlot[] itemSlots;                                                //All of the enabled itemslots in this panel
+	//All of the enabled ItemSlots in this panel
+	private ItemSlot[] itemSlots;
+	//All of the ItemSlots in this panel
+	private ItemSlot[] itemSlots_Total;
+	//All of the excluded ItemSlots in this panel
+	private ItemSlot[] itemSlots_Excluded;
+
+	private ExcludeList itemSlots_excludeList;
 
 	/// <summary>The amount of itemSlots that are not empty in the panel</summary>
-	public int ItemCount { get; private set; }
-	/// <summary>The max size of how many items can be held in the panel</summary>
+	public int ItemCount {
+		get {
+			if(itemSlots != null) {
+				int count = 0;
+				foreach(ItemSlot itemSlot in itemSlots) {
+					if(!itemSlot.IsEmpty) {
+						count++;
+					}
+				}
+				return count;
+			}
+			return 0;
+		}
+	}
+	//public int ItemCount { get; private set; }
+	/// <summary>The total amount of ItemSlots that exist excuding disabled slots</summary>
 	public int Capasity {
 		get {
 			if(itemSlots != null) return itemSlots.Length;
 			else return 0;
 		}
 	}
-	/// <summary>The max size of how many items could be held incuding disabled slots</summary>
-	public int TotalCapasity { get; private set; }
+	/// <summary>The total amount of ItemSlots that exist</summary>
+	public int CapasityTotal {
+		get {
+			if(itemSlots_Total != null) return itemSlots_Total.Length;
+			else return 0;
+		}
+	}
+	/// <summary>The total amount of excluded ItemSlots that exist</summary>
+	public int CapasityTotalExcluded {
+		get {
+			//if(itemSlots_excludeList.itemSlots != null) return itemSlots_excludeList.itemSlots.Length;
+			if(itemSlots_Excluded != null) return itemSlots_Excluded.Length;
+			else return 0;
+		}
+	}
 
 	/// <summary>Is all of the slots in the panel full</summary>
 	public bool IsSlotsFull { get { return (ItemCount >= Capasity); } }
@@ -43,19 +78,18 @@ public class InventoryPanel : MonoBehaviour {
 	}
 
 	//Delegates
-	public delegate void Callback(InventoryPanel panel, ItemSlot itemSlot, int index);
+	public delegate void Callback(BaseEventData eventData, InventoryPanel panel, ItemSlot itemSlot, int index);
 	public static Callback OnSlotSelectedCallback, OnSlotSubmitCallback;
 
 
 	void Awake() {
+		itemSlots_excludeList = GetComponent<ExcludeList>();
+
 		ItemSlot.OnSelectedCallback += OnSlotSelected;
 		ItemSlot.OnSubmitCallback += OnSlotSubmit;
 	}
 	void Start() {
 		CalculateItemSlots();
-	}
-	void Update() {
-		
 	}
 	
 	/// <summary>Checks if the item can be added to the panel without accualy adding it</summary>
@@ -81,27 +115,46 @@ public class InventoryPanel : MonoBehaviour {
 	[ContextMenu("CalculateItemSlots")]
 	/// <summary>Recalculates how many slots are available for this slot to use</summary>
 	public void CalculateItemSlots() {
-		ItemSlot[] itemSlotArr = GetComponentsInChildren<ItemSlot>();
-		TotalCapasity = itemSlotArr.Length;
+		//Every single itemSlot in the InventoryPanel
+		ItemSlot[] allItemSlots = GetComponentsInChildren<ItemSlot>();
 
-		//Extract only the itemSlots that are not disabled
-		List<ItemSlot> itemSlotList = new List<ItemSlot>();
-		for(int i = 0; i < itemSlotArr.Length; i++) {
-			if(!itemSlotArr[i].isDisabled) {
-				itemSlotList.Add(itemSlotArr[i]);
+		//Create the total and exclude list
+		List<ItemSlot> temp_itemSlots_Excluded = new List<ItemSlot>();
+		List<ItemSlot> temp_itemSlots_Total = new List<ItemSlot>();
+		//Loop through AllItemSlots
+		for(int y = 0; y < allItemSlots.Length; y++) {
+			//Loop through itemSlots_excludeList
+			for(int x = 0; x < itemSlots_excludeList.itemSlots.Length; x++) {
+				//If it is in the list
+				if(allItemSlots[y] == itemSlots_excludeList.itemSlots[x]) {
+					temp_itemSlots_Excluded.Add(allItemSlots[y]);
+				} else {	//If it is not in the list
+					temp_itemSlots_Total.Add(allItemSlots[y]);
+				}
 			}
 		}
-		itemSlots = itemSlotList.ToArray();
+		itemSlots_Excluded = temp_itemSlots_Excluded.ToArray();
+		itemSlots_Total = temp_itemSlots_Total.ToArray();
+		
 
-		//Check if their are any items in the items slots
-		ItemCount = 0;	//Reset the count
-		foreach(ItemSlot itemSlot in itemSlots) {
-			if(!itemSlot.IsEmpty) {
-				ItemCount++;
+		//Create the usable ItemSlot list
+		List<ItemSlot> temp_itemSlots = new List<ItemSlot>();
+		//Loop through AllItemSlots
+		for(int y = 0; y < allItemSlots.Length; y++) {
+			if(!allItemSlots[y].isDisabled) {
+				//Scan the exclude list
+				bool flag = true;
+				foreach(ItemSlot itemSlot_excuded in itemSlots_excludeList.itemSlots) {
+					if(allItemSlots[y] == itemSlot_excuded) {
+						flag = false;
+					}
+				}
+				//If its not in the exclude list then add it
+				if(flag)  temp_itemSlots.Add(allItemSlots[y]);
 			}
 		}
+		itemSlots = temp_itemSlots.ToArray();
 	}
-	
 	
 	#region ADD/REMOVE ITEM
 	/// <summary>Adds the item to the item panel</summary>
@@ -171,7 +224,7 @@ public class InventoryPanel : MonoBehaviour {
 					//Add the given item to the slot
 					if(itemSlots[i].AddItem(newItem)) {
 						//Item was succefully added the slot
-						ItemCount++;
+						//ItemCount++;
 					} else return false;
 					
 					break;
@@ -193,7 +246,7 @@ public class InventoryPanel : MonoBehaviour {
 		Item itemRemoved = itemSlots[index].RemoveItem(amount);
 		if(!itemRemoved) return null;
 
-		if(amount <= 0)  ItemCount--;
+		//if(amount <= 0)  ItemCount--;
 		return itemRemoved;
 	}
 
@@ -215,7 +268,7 @@ public class InventoryPanel : MonoBehaviour {
 				if(item.name.Equals(name)) {
 					if(amount <= 0) {
 						//Remove the item
-						ItemCount--;
+						//ItemCount--;
 						return itemSlots[i].RemoveItem();
 					} else {
 						Item itemRemoved = itemSlots[i].RemoveItem(amount);
@@ -243,7 +296,7 @@ public class InventoryPanel : MonoBehaviour {
 			//Only delete the slots with items in them
 			if(!itemSlots[i].IsEmpty) {
 				items[counter] = itemSlots[i].RemoveItem();
-				ItemCount--;
+				//ItemCount--;
 				counter++;
 			}
 		}
@@ -253,37 +306,38 @@ public class InventoryPanel : MonoBehaviour {
 	
 	#region METHOD MESSAGES
 	/// <summary>Method Message: Called when any itemSlot is selected</summary>
-	private void OnSlotSelected(ItemSlot itemSlot) {
+	private void OnSlotSelected(BaseEventData eventData, ItemSlot itemSlot) {
 		for(int i = 0; i < itemSlots.Length; i++) {
 			//If the selected item slot is in our InventoryPanel
 			if(itemSlots[i] == itemSlot) {
 				
 				//Called when any ItemSlot in this InventoryPanel is selected
 				if(OnSlotSelectedCallback != null)
-					OnSlotSelectedCallback(this, itemSlot, i);
+					OnSlotSelectedCallback(eventData, this, itemSlot, i);
 			}
 		}
 	}
 
 	/// <summary>Method Message: Called when any itemSlot is submited</summary>
-	private void OnSlotSubmit(ItemSlot itemSlot) {
+	private void OnSlotSubmit(BaseEventData eventData, ItemSlot itemSlot) {
 		for(int i = 0; i < itemSlots.Length; i++) {
 			//If the selected item slot is in our InventoryPanel
 			if(itemSlots[i] == itemSlot) {
 
 				//Called when any ItemSlot in this InventoryPanel is submited
 				if(OnSlotSubmitCallback != null)
-					OnSlotSubmitCallback(this, itemSlot, i);
+					OnSlotSubmitCallback(eventData, this, itemSlot, i);
 			}
 		}
 	}
 	#endregion
 	
-	#region SETTERS & GETTERS
+	#region MISC
 	/// <summary>Selects the ItemSlot with the given index in this panel</summary>
 	public void SelectSlot(int index = 0) {
+		DeselectAllSlots();
 		if(itemSlots[index] != null)
-			itemSlots[index].Select();
+			itemSlots[index].OnSelect(null);
 	}
 	/// <summary>Deselects the ItemSlot with the given index in this panel</summary>
 	public void DeselectSlot(int index) {
@@ -297,20 +351,33 @@ public class InventoryPanel : MonoBehaviour {
 		}
 	}
 
-	public ItemSlot GetItemSlot(int index) {
-		return itemSlots[index];
-	}
-
-	/// <summary>Sets this panel active or not</summary>
-	public void SetActive(bool value) {
-		gameObject.SetActive(value);
+	[ContextMenu("EnableAllItemSlots")]
+	/// <summary>Enable all of the ItemSlots in this InventoryPanel</summary>
+	public void EnableAllItemSlots() {
+		foreach(ItemSlot itemSlot in itemSlots_Total) {
+			itemSlot.Enable();
+		}
 		CalculateItemSlots();
 	}
+	[ContextMenu("DisableAllItemSlots")]
+	/// <summary>Disable all of the ItemSlots in this InventoryPanel</summary>
+	public void DisableAllItemSlots() {
+		foreach(ItemSlot itemSlot in itemSlots_Total) {
+			itemSlot.Disable();
+		}
+		CalculateItemSlots();
+	}
+
 	/// <summary>Updates all of the ItemSlot displays in this panel</summary>
 	public void UpdateAllSlotDisplay() {
 		foreach(ItemSlot itemSlot in itemSlots) {
 			itemSlot.DisplayUpdateSlot();
 		}
+		CalculateItemSlots();
+	}
+
+	public ItemSlot GetItemSlot(int index) {
+		return itemSlots[index];
 	}
 	#endregion
 
