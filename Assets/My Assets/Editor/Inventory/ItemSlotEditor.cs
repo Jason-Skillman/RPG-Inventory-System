@@ -48,7 +48,8 @@ public class ItemSlotEditor : SelectableEditor {
 		GUILayout.Space(10);
 
 		main.isDisabled = EditorGUILayout.Toggle("Is Disabled", main.isDisabled);
-		
+		main.canNavigate = EditorGUILayout.Toggle("Can Navigate", main.canNavigate);
+
 
 
 		GUILayout.Space(10);

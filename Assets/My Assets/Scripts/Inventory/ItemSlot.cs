@@ -22,6 +22,8 @@ public class ItemSlot : Selectable, ISubmitHandler {
 	public bool isSelected = false;
 	/// <summary>Is this slot disabled</summary>
 	public bool isDisabled = false;
+	/// <summary>Can the slot be navigated to</summary>
+	public bool canNavigate = true;
 	
 	//Delegates
 	public delegate void Callback(BaseEventData eventData, ItemSlot itemSlot);
@@ -40,7 +42,15 @@ public class ItemSlot : Selectable, ISubmitHandler {
 
 		if(!IsEmpty) item = Instantiate(item);
 
+		if(!canNavigate) {
+			Navigation navAuto = new Navigation();
+			navAuto.mode = Navigation.Mode.None;
+			navigation = navAuto;
+		}
+
 		DisplayClearSlot();
+		imageSelect.enabled = false;
+
 		if(isDisabled) Disable();
 		else Enable();
 	}
@@ -318,7 +328,7 @@ public class ItemSlot : Selectable, ISubmitHandler {
 		imageItem.color = new Color(255, 255, 255, 0);
 
 		//Clear the select sprite
-		imageSelect.enabled = false;
+		//imageSelect.enabled = false;
 
 		//Clear the stack amount
 		textAmount.text = "";
@@ -340,9 +350,11 @@ public class ItemSlot : Selectable, ISubmitHandler {
 		imageBackground.color = new Color(0.54f, 0.54f, 0.54f);
 
 		//Update the navagation
-		Navigation navAuto = new Navigation();
-		navAuto.mode = Navigation.Mode.Automatic;
-		navigation = navAuto;
+		if(canNavigate) {
+			Navigation navAuto = new Navigation();
+			navAuto.mode = Navigation.Mode.Automatic;
+			navigation = navAuto;
+		}
 	}
 
 	/// <summary>Sets the slot to be disabled</summary>
@@ -357,9 +369,11 @@ public class ItemSlot : Selectable, ISubmitHandler {
 		imageBackground.color = new Color(0.2f, 0.2f, 0.2f);
 
 		//Update the navagation
-		Navigation navNone = new Navigation();
-		navNone.mode = Navigation.Mode.None;
-		navigation = navNone;
+		if(canNavigate) {
+			Navigation navNone = new Navigation();
+			navNone.mode = Navigation.Mode.None;
+			navigation = navNone;
+		}
 	}
 	#endregion
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -7,16 +8,14 @@ using UnityEngine.EventSystems;
 public class InventoryPanel : MonoBehaviour {
 
 	//public ItemDisplayer displayer;												//Reference to this panel's item displayer
-
+	public ItemSlot itemPickup;
 	
 	//All of the enabled ItemSlots in this panel
 	private ItemSlot[] itemSlots;
 	//All of the ItemSlots in this panel
 	private ItemSlot[] itemSlots_Total;
-	//All of the excluded ItemSlots in this panel
-	private ItemSlot[] itemSlots_Excluded;
 
-	private ExcludeList itemSlots_excludeList;
+	private ExcludeList excludeList;
 
 	/// <summary>The amount of itemSlots that are not empty in the panel</summary>
 	public int ItemCount {
@@ -51,8 +50,7 @@ public class InventoryPanel : MonoBehaviour {
 	/// <summary>The total amount of excluded ItemSlots that exist</summary>
 	public int CapasityTotalExcluded {
 		get {
-			//if(itemSlots_excludeList.itemSlots != null) return itemSlots_excludeList.itemSlots.Length;
-			if(itemSlots_Excluded != null) return itemSlots_Excluded.Length;
+			if(excludeList.itemSlots != null) return excludeList.itemSlots.Length;
 			else return 0;
 		}
 	}
@@ -83,7 +81,7 @@ public class InventoryPanel : MonoBehaviour {
 
 
 	void Awake() {
-		itemSlots_excludeList = GetComponent<ExcludeList>();
+		excludeList = GetComponent<ExcludeList>();
 
 		ItemSlot.OnSelectedCallback += OnSlotSelected;
 		ItemSlot.OnSubmitCallback += OnSlotSubmit;
@@ -119,21 +117,21 @@ public class InventoryPanel : MonoBehaviour {
 		ItemSlot[] allItemSlots = GetComponentsInChildren<ItemSlot>();
 
 		//Create the total and exclude list
-		List<ItemSlot> temp_itemSlots_Excluded = new List<ItemSlot>();
+		//List<ItemSlot> temp_itemSlots_Excluded = new List<ItemSlot>();
 		List<ItemSlot> temp_itemSlots_Total = new List<ItemSlot>();
 		//Loop through AllItemSlots
 		for(int y = 0; y < allItemSlots.Length; y++) {
 			//Loop through itemSlots_excludeList
-			for(int x = 0; x < itemSlots_excludeList.itemSlots.Length; x++) {
+			for(int x = 0; x < excludeList.itemSlots.Length; x++) {
 				//If it is in the list
-				if(allItemSlots[y] == itemSlots_excludeList.itemSlots[x]) {
-					temp_itemSlots_Excluded.Add(allItemSlots[y]);
+				if(allItemSlots[y] == excludeList.itemSlots[x]) {
+					//temp_itemSlots_Excluded.Add(allItemSlots[y]);
 				} else {	//If it is not in the list
 					temp_itemSlots_Total.Add(allItemSlots[y]);
 				}
 			}
 		}
-		itemSlots_Excluded = temp_itemSlots_Excluded.ToArray();
+		//itemSlots_Excluded = temp_itemSlots_Excluded.ToArray();
 		itemSlots_Total = temp_itemSlots_Total.ToArray();
 		
 
@@ -144,7 +142,7 @@ public class InventoryPanel : MonoBehaviour {
 			if(!allItemSlots[y].isDisabled) {
 				//Scan the exclude list
 				bool flag = true;
-				foreach(ItemSlot itemSlot_excuded in itemSlots_excludeList.itemSlots) {
+				foreach(ItemSlot itemSlot_excuded in excludeList.itemSlots) {
 					if(allItemSlots[y] == itemSlot_excuded) {
 						flag = false;
 					}
@@ -173,11 +171,11 @@ public class InventoryPanel : MonoBehaviour {
 			return false;
 		}
 		do {
-			//Check if there is already an existing stack somewhere in the inventoryPanel
+			//Check if there is already an existing stack somewhere in the InventoryPanel
 			for(int i = 0; i < itemSlots.Length; i++) {
 				//If the slot is not empty and the item in that slot matches the new item
 				if(!itemSlots[i].IsEmpty && itemSlots[i].item.name == item.name) {
-					//Is their is some room in the itemSlot for the new item to go
+					//Is their is some room in the ItemSlot for the new item to go
 					if(itemSlots[i].item.amount < itemSlots[i].item.maxStack) {
 						int amountLeftInSlot = itemSlots[i].item.maxStack - itemSlots[i].item.amount;
 
@@ -305,7 +303,7 @@ public class InventoryPanel : MonoBehaviour {
 	#endregion
 	
 	#region METHOD MESSAGES
-	/// <summary>Method Message: Called when any itemSlot is selected</summary>
+	/// <summary>Method Message: Called when any ItemSlot is selected</summary>
 	private void OnSlotSelected(BaseEventData eventData, ItemSlot itemSlot) {
 		for(int i = 0; i < itemSlots.Length; i++) {
 			//If the selected item slot is in our InventoryPanel
@@ -314,6 +312,14 @@ public class InventoryPanel : MonoBehaviour {
 				//Called when any ItemSlot in this InventoryPanel is selected
 				if(OnSlotSelectedCallback != null)
 					OnSlotSelectedCallback(eventData, this, itemSlot, i);
+				break;
+			}
+		}
+		for(int i = 0; i < excludeList.itemSlots.Length; i++) {
+			if(excludeList.itemSlots[i] == itemSlot) {
+				if(OnSlotSelectedCallback != null)
+					OnSlotSelectedCallback(eventData, this, itemSlot, i);
+				break;
 			}
 		}
 	}
@@ -327,6 +333,25 @@ public class InventoryPanel : MonoBehaviour {
 				//Called when any ItemSlot in this InventoryPanel is submited
 				if(OnSlotSubmitCallback != null)
 					OnSlotSubmitCallback(eventData, this, itemSlot, i);
+				break;
+			}
+		}
+		for(int i = 0; i < excludeList.itemSlots.Length; i++) {
+			if(excludeList.itemSlots[i] == itemSlot) {
+				
+				foreach(string typeString in excludeList.limitaionTypes) {
+					Type limitaionType = System.Reflection.Assembly.GetExecutingAssembly().GetType(typeString);
+					
+					//Debug.Log(excludeList.itemSlots[i].name, excludeList.itemSlots[i]);
+					//Debug.Log(excludeList.itemSlots[i].item.GetType() + "    " + typeString);
+					//if(itemSlots_excludeList.itemSlots[i].item.GetType() == limitaionType) {
+						//Debug.Log("mactch");
+					//}
+				}
+				
+				if(OnSlotSubmitCallback != null)
+					OnSlotSubmitCallback(eventData, this, itemSlot, i);
+				break;
 			}
 		}
 	}

@@ -15,6 +15,8 @@ public class InventoryPanelEditor : Editor {
 		EditorGUILayout.LabelField("Inventory Panel", EditorStyles.boldLabel);
 		GUILayout.Space(5);
 
+
+
 		//Componets
 		//main.itemType = (PanelType)EditorGUILayout.EnumPopup("Type", main.itemType);
 		//main.displayer = (ItemDisplayer)EditorGUILayout.ObjectField("Displayer", main.displayer, typeof(ItemDisplayer), true);
